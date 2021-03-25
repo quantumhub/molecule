@@ -1,0 +1,156 @@
+Part A. Pass setting from user app nexutil to kernel
+Step 1.
+Pass paramter from ioctl(cmd=500) to ucode
+
+https://github.com/seemoo-lab/nexmon_csi/blob/ba99ce12a6a42d7e4ec75e6f8ace8f610ed2eb60/src/ioctl.c#L74
+#if NEXMON_CHIP == CHIP_VER_BCM4366c0
+#define SHM_CSI_COLLECT         0xB80
+#define NSSMASK                 0xB81
+#define COREMASK                0xB82
+#define APPLY_PKT_FILTER        0xB83
+#define PKT_FILTER_BYTE         0xB84
+#define N_CMP_SRC_MAC           0xB85
+#define CMP_SRC_MAC_0_0         0xB86
+#define CMP_SRC_MAC_0_1         0xB87
+#define CMP_SRC_MAC_0_2         0xB88
+#define CMP_SRC_MAC_1_0         0xB89
+#define CMP_SRC_MAC_1_1         0xB8A
+#define CMP_SRC_MAC_1_2         0xB8B
+#define CMP_SRC_MAC_2_0         0xB8C
+#define CMP_SRC_MAC_2_1         0xB8D
+#define CMP_SRC_MAC_2_2         0xB8E
+#define CMP_SRC_MAC_3_0         0xB8F
+#define CMP_SRC_MAC_3_1         0xB90
+#define CMP_SRC_MAC_3_2         0xB91
+#define FORCEDEAF               0xB92
+#define CLEANDEAF               0xB93
+#define FIFODELAY               0xB94
+
+https://github.com/seemoo-lab/nexmon_csi/blob/ba99ce12a6a42d7e4ec75e6f8ace8f610ed2eb60/src/ioctl.c#L127
+wlc_bmac_write_shm(wlc->hw, NSSMASK * 2, ((params->core_nss_mask)&0xf0)>>4);
+
+Note that 
+>>> a=0xB81
+>>> hex(a<<1)
+'0x1702'
+
+Step 2. ucode makes use of the parameters, e.g. for NSSMASK
+nexmon_csi/src/csi.ucode.bcm4366c0.10_10_122_20.asm
+
+
+#define		SHM_CSI_COLLECT		[SHM(0x1700)]
+#define		NSSMASK				[SHM(0x1702)]
+#define		COREMASK			[SHM(0x1704)]
+#define		APPLY_PKT_FILTER	[SHM(0x1706)]
+#define		PKT_FILTER_BYTE		[SHM(0x1708)]
+#define		N_CMP_SRC_MAC		[SHM(0x170a)]
+#define		CMP_SRC_MAC_0_0		SHM(0x170c)
+#define		FORCEDEAF			[SHM(0x1724)]
+#define		CLEANDEAF			[SHM(0x1726)]
+#define		FIFODELAY			[SHM(0x1728)]
+
+and	SPARE1, NSSMASK, SPARE1
+
+Part B. Pass CSI reading from kernel to eth6 interface 
+
+Step 1. Kernel copy CSI to shared memory SPR_BASE1=SHM(0x1600)
+
+{
+if (DUMP_CSI!=0){ // xje	DUMP_CSI, 0, dont_dump_csi
+    PHYSTATUS0=[0x870], 
+    RXCHAN=[0x879], 
+    DUMP_CSI=0, 
+    > 	calls	enable_carrier_search
+    CLEANDEAF=1;
+
+    OFF1SAFE=SPR_BASE1, 
+    [SHM(0x1644:0x1648)]=[SHM((MAC_OFFSET + 10:14))] //uint8 d11csihdr->src[6];
+    [SHM(0x164a)]=[SHM((MAC_OFFSET + 22))] //uint16 d11csihdr->seqcnt;
+    [SHM(0x164c)]=RXCHAN //uint16 d11csihdr->chanspec;
+
+    //core 0..3 address
+    > #define		ACPHY_TBL_ID_CORE0CHANESTTBL	73
+    > #define		ACPHY_TBL_ID_CORE1CHANESTTBL	105
+    > #define		ACPHY_TBL_ID_CORE2CHANESTTBL	137
+    > #define		ACPHY_TBL_ID_CORE3CHANESTTBL	169
+
+
+    for (SPARE4=0; SPARE4<4; SPARE4++){  //loop_core: core 0..3
+        //for each Rx
+        if (SPARE4==0) SPARE5=ACPHY_TBL_ID_CORE0CHANESTTBL;
+        if (SPARE4==1) SPARE5=ACPHY_TBL_ID_CORE1CHANESTTBL; 
+        if (SPARE4==2) SPARE5=ACPHY_TBL_ID_CORE2CHANESTTBL; 
+        if (SPARE4==3) SPARE5=ACPHY_TBL_ID_CORE3CHANESTTBL; 
+        
+        for (SPARE6=0; SPARE6<4;SPARE6++){ 		// NSSRX 0..3
+            //> loop_nss:
+            SPARE1=SPARE6, 
+            SPARE1=SPARE1<<3, 
+            SPARE1=SPARE4|SPARE1, 
+            [SHM(0x1640)]=SPARE1<<8, //uint16 d11csihdr->csiconf;
+            SPARE1=1<<SPARE6, 
+            SPARE1=SPARE1&NSSMASK, 
+            if (SPARE1!=0){ //
+                SPARE1=1<<SPARE4, 
+                SPARE1=SPARE1&COREMASK, 
+                if (SPARE1!=0){ //
+                    > goextract:
+                    SPARE2=	0x3800, 
+                    SPARE2 = RXCHAN & SPARE2, 
+                    SPARE2 = SPARE2>>11, 
+                    
+                    if (SPARE2==0x4) SPARE3 =16;// chunk_set+ Relative to using 20, 40, or 80 MHz wide channels those are 64, 128, or 256 times four bytes long.
+                    else if (SPARE2==0x3) SPARE3=8
+                    else SPARE3=4
+                    
+                    SPARE1=0x8000, //#define NEWCSI	0x8000
+                    [SHM(0x1642)]=SPARE1|SPARE3, //uint16 d11csihdr->start; check this is a new frame
+                    SPARE2=SPARE6<<8
+                    
+                    for( ;SPARE3==0; SPARE3--){ // loop_main_csi: SPARE3*16 subcarriers
+                        > 	phy_reg_write(0x00d, SPARE5)
+                        > 	phy_reg_write(0x00e, SPARE2)
+                        SPR_BASE1=SHM(0x1600), 
+                        for (SPARE1=16;SPARE1>0;SPARE1--){ // slurp:
+                            READVAL(off1) //uint32 d11csihdr->csi[CSIDATA_PER_CHUNK>>2];
+                            SPR_BASE1=SPR_BASE1+2, 
+                        }
+                        
+                        SPR_BASE1=OFF1SAFE, 
+                        SPARE1=[0x86e], 
+                        [0xaee]=SPARE1, 
+                        
+                        SPARE1=[0x86f], 
+                        [0xaef]=SPARE1, 
+                        
+                        SPARE1=SPARE4<<10,
+                        [0xaff] = SPARE1 | SPARE3, 
+                        
+                        SPARE1 = SPARE6<<8, 
+                        [0xaff] = [0xaff] | SPARE1, 
+                        
+                        SPARE1=0xaee
+                        > 	calls L902
+                        
+                        if (FIFODELAY !=0){                    
+                            SPARE1=SPR_TSF_WORD0+FIFODELAY
+                            wait(FIFODELAY) // wait_loop:
+                        }
+                        
+                        SPARE1=0x7fff, 
+                        SPARE1=[SHM(0x1642)]+SPARE1, 
+                        [SHM(0x1642)]=SPARE1, 
+                        
+                        SPARE2=SPARE2+16, 
+                    }
+                } // check condition if (SPARE1!=0)
+            } // check condition if (SPARE1!=0)
+        } // each Tx SS
+    } // each Rx core
+    > 	calls disable_carrier_search
+    > 	mov 0, CLEANDEAF
+} //> dont_dump_csi:
+}
+
+Step 2. csi_extractor aggregate CSI fragments to UDP packet and send it over eth6 interface
+https://github.com/seemoo-lab/nexmon_csi/blob/ba99ce12a6a42d7e4ec75e6f8ace8f610ed2eb60/src/csi_extractor.c#L77
