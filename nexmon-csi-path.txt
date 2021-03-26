@@ -1,3 +1,13 @@
+b43 ucode assembling language
+https://github.com/seemoo-lab/nexmon/blob/master/buildtools/b43/assembler/README
+http://bcm-v4.sipsolutions.net/802.11/Microcode
+
+Registers
+https://bcm-v4.sipsolutions.net/802.11/Registers/
+
+
+
+
 Part A. Pass setting from user app nexutil to kernel
 Step 1.
 Pass paramter from ioctl(cmd=500) to ucode
