@@ -5,8 +5,11 @@ http://bcm-v4.sipsolutions.net/802.11/Microcode
 Registers
 https://bcm-v4.sipsolutions.net/802.11/Registers/
 
+Rx data flow
+http://netweb.ing.unibs.it/~openfwwf/reception.php
 
-
+Data Structure in d11
+https://github.com/seemoo-lab/nexmon/blob/master/firmwares/bcm4366c0/structs.common.h
 
 Part A. Pass setting from user app nexutil to kernel
 Step 1.
