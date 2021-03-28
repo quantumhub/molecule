@@ -5,8 +5,29 @@ http://bcm-v4.sipsolutions.net/802.11/Microcode
 Registers
 https://bcm-v4.sipsolutions.net/802.11/Registers/
 
+--Special Purpose Registers
+https://github.com/seemoo-lab/nexmon/blob/master/buildtools/b43-v2/debug/include/spr.inc
+
+SPR to handle the RXE
+•SPR_RXE_RXHDR_OFFSET - SPR_RXE_RXHDR_LEN: Equivalent to SPR_TXE0_TX_SHM_ADDRbut for receive process, all the receive frames headers are copied in the SHM order to eval-uated part of them, this two registers perform the setting for the receive SHM address, thisis where the RXE puts the received frame header into the SHM, and receive copy length(amount of bytes the RXE copies into SHM).
+
+•SPR_RXE_FIFOCTL0 SPR_RXE_FIFOCTL1: These two registers control the receive process,after the PLCP of a packet is received, the firmware enables data passing between the receiverand the FIFO. When rx is complete, then the firmware pushes the packet in the FIFO up tothe host. All these operations are performed through this register setting.
+
+•SPR_RXE_FRAMELEN: This register reports even while RX in progress and hence increasesduring reception.
+
+•SPR_RXE_Copy_Offset - SPR_RXE_Copy_Length:  These two registers are able to copiesreceived frame into the RX host queue
+
+/* SHM (Shared Memory) offsets */
+https://github.com/seemoo-lab/nexmon/blob/master/buildtools/b43-v2/debug/include/shm.inc
+./buildtools/b43/debug/include/shm.inc:17:#define SHM(address)		(((address) / 2) +	
+
+another technique typeRegisterIndirect Address, in which we use a register to contain a point to memory, this technique can hasan offset explicit in instruction code, in this case is named "Displacement Addressing". The chipsethas 6 SPR to perform the register indirect address, they named offset register (SPR_BASEx withx from 0 to 5), normally some of them contain constant values that point to important parts ofthe SHM like the headers for incoming and outgoing frames, these pointers not change, and thefirmware use their frequently.
+[1] https://core.ac.uk/download/pdf/53287734.pdf
+
 Rx data flow
 http://netweb.ing.unibs.it/~openfwwf/reception.php
+
+
 
 Data Structure in d11
 https://github.com/seemoo-lab/nexmon/blob/master/firmwares/bcm4366c0/structs.common.h
@@ -74,7 +95,8 @@ if (DUMP_CSI!=0){ // xje	DUMP_CSI, 0, dont_dump_csi
     RXCHAN=[0x879], 
     DUMP_CSI=0, 
     > 	calls	enable_carrier_search
-    CLEANDEAF=1;
+    CLEANDEAF=1, 
+
 
     OFF1SAFE=SPR_BASE1, 
     [SHM(0x1644:0x1648)]=[SHM((MAC_OFFSET + 10:14))] //uint8 d11csihdr->src[6];
@@ -95,7 +117,7 @@ if (DUMP_CSI!=0){ // xje	DUMP_CSI, 0, dont_dump_csi
         if (SPARE4==2) SPARE5=ACPHY_TBL_ID_CORE2CHANESTTBL; 
         if (SPARE4==3) SPARE5=ACPHY_TBL_ID_CORE3CHANESTTBL; 
         
-        for (SPARE6=0; SPARE6<4;SPARE6++){ 		// NSSRX 0..3
+        for (SPARE6=0; SPARE6<4;SPARE6++){ 		// NSSTX 0..3
             //> loop_nss:
             SPARE1=SPARE6, 
             SPARE1=SPARE1<<3, 
@@ -121,8 +143,8 @@ if (DUMP_CSI!=0){ // xje	DUMP_CSI, 0, dont_dump_csi
                     SPARE2=SPARE6<<8
                     
                     for( ;SPARE3==0; SPARE3--){ // loop_main_csi: SPARE3*16 subcarriers
-                        > 	phy_reg_write(0x00d, SPARE5)
-                        > 	phy_reg_write(0x00e, SPARE2)
+                        > 	phy_reg_write(0x00d, SPARE5) // [0x00d]=SPARE5
+                        > 	phy_reg_write(0x00e, SPARE2) // [0x00e]=SPARE2
                         SPR_BASE1=SHM(0x1600), 
                         for (SPARE1=16;SPARE1>0;SPARE1--){ // slurp:
                             READVAL(off1) //uint32 d11csihdr->csi[CSIDATA_PER_CHUNK>>2];
@@ -130,16 +152,14 @@ if (DUMP_CSI!=0){ // xje	DUMP_CSI, 0, dont_dump_csi
                         }
                         
                         SPR_BASE1=OFF1SAFE, 
-                        SPARE1=[0x86e], 
-                        [0xaee]=SPARE1, 
                         
-                        SPARE1=[0x86f], 
-                        [0xaef]=SPARE1, 
+                        SPARE1=[0x86e:0x86f], 
+                        [0xaee:0xaef]=SPARE1,
                         
                         SPARE1=SPARE4<<10,
-                        [0xaff] = SPARE1 | SPARE3, 
+                        [0xaff] = SPARE1 | SPARE3; //missing = ucodecsifrm->NexmonCSICfg & 0xff;
                         
-                        SPARE1 = SPARE6<<8, 
+                        SPARE1 = SPARE6<<8; //csiconf = (ucodecsifrm->NexmonCSICfg >> 8)&0x3f;
                         [0xaff] = [0xaff] | SPARE1, 
                         
                         SPARE1=0xaee
