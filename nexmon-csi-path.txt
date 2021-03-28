@@ -19,7 +19,7 @@ SPR to handle the RXE
 
 /* SHM (Shared Memory) offsets */
 https://github.com/seemoo-lab/nexmon/blob/master/buildtools/b43-v2/debug/include/shm.inc
-./buildtools/b43/debug/include/shm.inc:17:#define SHM(address)		(((address) / 2) +	
+./buildtools/b43/debug/include/shm.inc:17:#define SHM(address)		(((address) / 2) + (%assert((address & 1) == 0)))
 
 another technique typeRegisterIndirect Address, in which we use a register to contain a point to memory, this technique can hasan offset explicit in instruction code, in this case is named "Displacement Addressing". The chipsethas 6 SPR to perform the register indirect address, they named offset register (SPR_BASEx withx from 0 to 5), normally some of them contain constant values that point to important parts ofthe SHM like the headers for incoming and outgoing frames, these pointers not change, and thefirmware use their frequently.
 [1] https://core.ac.uk/download/pdf/53287734.pdf
