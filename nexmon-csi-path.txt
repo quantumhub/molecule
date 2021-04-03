@@ -190,3 +190,52 @@ if (DUMP_CSI!=0){ // xje	DUMP_CSI, 0, dont_dump_csi
 
 Step 2. csi_extractor aggregate CSI fragments to UDP packet and send it over eth6 interface
 https://github.com/seemoo-lab/nexmon_csi/blob/ba99ce12a6a42d7e4ec75e6f8ace8f610ed2eb60/src/csi_extractor.c#L77
+
+
+
+
+
+
+
+
+
+1111111111111111 appear in all 5 different FIFO buffer,so [0xaee] address does not lead to real copy of payload.
+	mov	0x100, SPARE1
+	mov	SPARE1, [0xaee]
+
+L902:
+	mov	SPARE1, SPR_RXE_RXHDR_OFFSET
+	mov	RXE_RXHDR_LEN, SPR_RXE_RXHDR_LEN
+	orx	0, 0, 0x1, SPR_RXE_CTL, SPR_RXE_CTL
+
+
+    if (p->len<1200) {   
+        p_dbg=create_new_dbg_frame(wl, p->len);
+        dbg_udpfrm = (struct dbg_udp_frame *) p_dbg->data;
+        dbg_udpfrm->metaData.hook_count=hook_count;
+        dbg_udpfrm->metaData.sk_buff_len=p->len;
+        dbg_udpfrm->metaData.RxFrameSize=wlc_rxhdr->rxhdr.RxFrameSize;
+        dbg_udpfrm->metaData.Pad=wlc_rxhdr->rxhdr.Pad;
+        if (dbg_udpfrm->metaData.Pad){
+            struct d11csihdr *ucodecsifrm = (struct d11csihdr *) &wlc_rxhdr->rxhdr.Pad;
+            dbg_udpfrm->metaData.csiconf=ucodecsifrm->csiconf;
+            dbg_udpfrm->metaData.seqcnt=ucodecsifrm->seqcnt;
+            
+            dbg_udpfrm->metaData.Pad2=((dbg_udpfrm->metaData.csiconf & 0x3800)>>11);
+            if (dbg_udpfrm->metaData.Pad2==0x1){
+                p_data_word32= (uint32 *)p->data;
+                for (ii=38;ii<40;ii++)
+                    p_data_word32[ii]=0x11111111;
+            }
+            
+        }
+        memcpy(dbg_udpfrm->payload,p->data,p->len);
+        p_dbg->len = sizeof(struct dbg_udp_frame) + p->len;
+        skb_pull(p_dbg, sizeof(struct ethernet_ip_udp_header));
+        prepend_ethernet_ipv4_udp_header(p_dbg);
+        wl->dev->chained->funcs->xmit(wl->dev, wl->dev->chained, p_dbg);
+        p_dbg=0;
+            
+        pkt_buf_free_skb(osh, p, 0);
+        return;
+    }
