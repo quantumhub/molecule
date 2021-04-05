@@ -1,0 +1,8 @@
+
+  gpio_sel = R_REG(osh, &regs->maccontrol1);
+	addr0 = R_REG(osh, &regs->u.d11acregs.SampleCollectStartPtr);
+	addr1 = R_REG(osh, &regs->u.d11acregs.SampleCollectStopPtr);
+	curptr = R_REG(osh, &regs->u.d11acregs.SampleCollectCurPtr);
+	len = (addr1 - addr0 + 1) * 4;
+  
+https://github.com/MerlinRdev/86u-merlin/blob/873cd369995e083896c7a7da12b8efa2c1865172/release/src-rt-5.02hnd/bcmdrivers/broadcom/net/wl/impl51/4365/src/wl/sys/wlc_macdbg.c#L1021
