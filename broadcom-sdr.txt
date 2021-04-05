@@ -6,3 +6,10 @@
 	len = (addr1 - addr0 + 1) * 4;
   
 https://github.com/MerlinRdev/86u-merlin/blob/873cd369995e083896c7a7da12b8efa2c1865172/release/src-rt-5.02hnd/bcmdrivers/broadcom/net/wl/impl51/4365/src/wl/sys/wlc_macdbg.c#L1021
+
+so, the RXHDR_len changes sometimes
+	/* use different hw rx offset for AC cores, must be done before dma_attach */
+	wlc->hwrxoff = (D11REV_GE(wlc_hw->corerev, 40)) ? WL_HWRXOFF_AC : WL_HWRXOFF;
+	wlc->hwrxoff_pktget = (wlc->hwrxoff % 4) ?  wlc->hwrxoff : (wlc->hwrxoff + 2);
+	
+https://github.com/MerlinRdev/86u-merlin/blob/873cd369995e083896c7a7da12b8efa2c1865172/release/src-rt-5.02hnd/bcmdrivers/broadcom/net/wl/impl51/4365/src/wl/sys/wlc_bmac_stubs.c#L295
