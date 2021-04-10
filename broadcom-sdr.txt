@@ -13,3 +13,14 @@ so, the RXHDR_len changes sometimes
 	wlc->hwrxoff_pktget = (wlc->hwrxoff % 4) ?  wlc->hwrxoff : (wlc->hwrxoff + 2);
 	
 https://github.com/MerlinRdev/86u-merlin/blob/873cd369995e083896c7a7da12b8efa2c1865172/release/src-rt-5.02hnd/bcmdrivers/broadcom/net/wl/impl51/4365/src/wl/sys/wlc_bmac_stubs.c#L295
+
+/* Process received frames */
+/*
+ * Return TRUE if more frames need to be processed. FALSE otherwise.
+ * Param 'bound' indicates max. # frames to process before break out.
+ */
+/* WLC_HIGH_API */
+void BCMFASTPATH
+wlc_recv(wlc_info_t *wlc, void *p)
+
+https://github.com/MerlinRdev/86u-merlin/blob/873cd369995e083896c7a7da12b8efa2c1865172/release/src-rt-5.02hnd/bcmdrivers/broadcom/net/wl/impl51/4365/src/wl/sys/wlc_rx.c#L534
