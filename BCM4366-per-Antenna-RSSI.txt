@@ -90,3 +90,6 @@ https://github.com/MerlinRdev/86u-merlin/blob/873cd369995e083896c7a7da12b8efa2c1
 		/* Total gain: */
 		tot_gain[core] = elna_gain[core] + gain_lna1 + gain_lna2 + gain_mix + gain_bq0
 		        +  gain_bq1 - tr_loss + gain_dvga;
+
+Discussion on AGC gain recovery:
+https://github.com/seemoo-lab/nexmon_csi/issues/125#issuecomment-716213885
