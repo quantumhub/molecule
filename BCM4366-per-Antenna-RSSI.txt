@@ -56,3 +56,13 @@ BWL_PRE_PACKED_STRUCT struct wlc_d11rxhdr {
 	  if (rxpwr_core[core] > 127)
 	    rxpwr_core[core] -= 256;
 	}
+
+4, Get temperature and do compensation:
+
+curr_temp = pi->u.pi_acphy->current_temperature;
+
+		if (temp_diff >= 0) {
+			*gain_err_temp_adj = (temp_diff * gain_temp_slope*2 + 25)/50;
+		} else {
+			*gain_err_temp_adj = (temp_diff * gain_temp_slope*2 - 25)/50;
+		}
