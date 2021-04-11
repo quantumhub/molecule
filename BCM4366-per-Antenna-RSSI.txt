@@ -1,0 +1,48 @@
+Where per Antenna RSSI comes from PhyRxStatus_2 and PhyRxStatus_3
+
+First appear in:
+typedef struct wlc_d11rxhdr wlc_d11rxhdr_t;				
+BWL_PRE_PACKED_STRUCT struct wlc_d11rxhdr {				
+	/* Even though rxhdr can be in short or long format, always declare it here			
+	 * to be in long format. So the offsets for the other fields are always the same.			
+	 */			
+	d11rxhdr_t rxhdr;			
+	uint32	tsf_l;		/* TSF_L reading */
+	int8	rssi;		/* computed instantaneous rssi in BMAC */
+	int8	rssi_qdb;	/* qdB portion of the computed rssi */	
+	int8	do_rssi_ma;	/* do per-pkt sampling for per-antenna ma in HIGH */	
+	int8	rxpwr[WL_RSSI_ANT_MAX];	/* rssi for supported antennas */	
+} BWL_POST_PACKED_STRUCT;				
+
+
+
+/* acphy PhyRxStatus_3: */
+#define PRXS2_ACPHY_RXPWR_ANT0	0xFF00	/* Rx power on core 1 */
+#define PRXS3_ACPHY_RXPWR_ANT1	0x00FF	/* Rx power on core 1 */
+#define PRXS3_ACPHY_RXPWR_ANT2	0xFF00	/* Rx power on core 2 */
+
+/* acphy PhyRxStatus_4: */
+#define PRXS4_ACPHY_RXPWR_ANT3	0x00FF	/* Rx power on core 3 */
+
+/* Get Rx power on core 0 */
+#define ACPHY_RXPWR_ANT0(rxs)	((ltoh16((rxs)->PhyRxStatus_2) & PRXS2_ACPHY_RXPWR_ANT0) >> 8)
+/* Get Rx power on core 1 */
+#define ACPHY_RXPWR_ANT1(rxs)	(ltoh16((rxs)->PhyRxStatus_3) & PRXS3_ACPHY_RXPWR_ANT1)
+/* Get Rx power on core 2 */
+#define ACPHY_RXPWR_ANT2(rxs)	((ltoh16((rxs)->PhyRxStatus_3) & PRXS3_ACPHY_RXPWR_ANT2) >> 8)
+/* Get whether the rxpwr is hacked for 11b rssi WAR */
+/* Tells whether the PhyRxStatus_2 & 0xFF00, PhyRxStatus_3 & 0xFFFF,
+ *  PhyRxStatus_4 & 0xFF are hacked or not,0=disabled, 1=enabled
+ */
+#define PRXS1_ACPHY_BIT_HACK		0x0008
+#define PRXS3_ACPHY_RXPWR_ANT4		0x00FF	/* Rx power on core 4 */
+#define ACPHY_HACK_PWR_STATUS(rxs)	((ltoh16((rxs)->PhyRxStatus_1) & PRXS1_ACPHY_BIT_HACK) >> 3)
+#define ACPHY_RXPWR_ANT4(rxs)		(ltoh16((rxs)->PhyRxStatus_4) & PRXS3_ACPHY_RXPWR_ANT4)
+
+
+
+	/* Sign extend */
+	FOREACH_CORE(pi, core) {
+	  if (rxpwr_core[core] > 127)
+	    rxpwr_core[core] -= 256;
+	}
