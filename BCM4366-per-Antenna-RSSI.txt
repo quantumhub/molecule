@@ -71,3 +71,22 @@ curr_temp = pi->u.pi_acphy->current_temperature;
 		} else {
 			*gain_err_temp_adj = (temp_diff * gain_temp_slope*2 - 25)/50;
 		}
+		
+
+PHY table may contain gains
+
+https://github.com/MerlinRdev/gtac5300-merlin/blob/4a64da3fe85cdb43ee2db5409911f654da538415/release/src-rt-5.02hnd/bcmdrivers/broadcom/net/wl/impl51/4365/src/wl/phymods/ac/include/phy_ac_info.h#L303
+#define ACPHY_TBL_ID_GAIN0                       68
+#define ACPHY_TBL_ID_GAINBITS0                   69
+#define ACPHY_TBL_ID_RSSICLIPGAIN0               70
+#define ACPHY_TBL_ID_EPSILON0                    71
+#define ACPHY_TBL_ID_SCALAR0                     72
+#define ACPHY_TBL_ID_CORE0CHANESTTBL             73
+#define ACPHY_TBL_ID_CORE0CHANSMTH_CHAN          78
+#define ACPHY_TBL_ID_CORE0CHANSMTH_FLTR          79
+
+
+https://github.com/MerlinRdev/86u-merlin/blob/873cd369995e083896c7a7da12b8efa2c1865172/release/src-rt-5.02hnd/bcmdrivers/broadcom/net/wl/impl51/4365/src/wl/phy/wlc_phy_ac.c#L5207
+		/* Total gain: */
+		tot_gain[core] = elna_gain[core] + gain_lna1 + gain_lna2 + gain_mix + gain_bq0
+		        +  gain_bq1 - tr_loss + gain_dvga;
