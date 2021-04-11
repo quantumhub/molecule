@@ -93,3 +93,6 @@ https://github.com/MerlinRdev/86u-merlin/blob/873cd369995e083896c7a7da12b8efa2c1
 
 Discussion on AGC gain recovery:
 https://github.com/seemoo-lab/nexmon_csi/issues/125#issuecomment-716213885
+
+Broadcom datasheet on Gain control with 3 dB step
+https://www.cypress.com/file/310246/download
