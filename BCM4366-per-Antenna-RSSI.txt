@@ -1,6 +1,6 @@
 Where per Antenna RSSI comes from PhyRxStatus_2 and PhyRxStatus_3
 
-First appear in:
+1, First appear in:
 typedef struct wlc_d11rxhdr wlc_d11rxhdr_t;				
 BWL_PRE_PACKED_STRUCT struct wlc_d11rxhdr {				
 	/* Even though rxhdr can be in short or long format, always declare it here			
@@ -14,7 +14,17 @@ BWL_PRE_PACKED_STRUCT struct wlc_d11rxhdr {
 	int8	rxpwr[WL_RSSI_ANT_MAX];	/* rssi for supported antennas */	
 } BWL_POST_PACKED_STRUCT;				
 
+2, Multimorphism:
 
+	/* Register with RSSICompute module */
+	if (pi->rssii != NULL &&
+	    (aci->rssii = phy_ac_rssi_register_impl(pi, aci, pi->rssii)) == NULL) {
+		PHY_ERROR(("%s: phy_ac_rssi_register_impl failed\n", __FUNCTION__));
+		goto fail;
+	}
+
+3, 11ac implementation phy_ac_rssi_register_impl:
+./4365/src/wl/phymods/ac/rssi/phy_ac_rssi.c:54:BCMATTACHFN(phy_ac_rssi_register_impl)(phy_info_t *pi, phy_ac_info_t *aci, phy_rssi_info_t *ri)
 
 /* acphy PhyRxStatus_3: */
 #define PRXS2_ACPHY_RXPWR_ANT0	0xFF00	/* Rx power on core 1 */
