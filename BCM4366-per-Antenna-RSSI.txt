@@ -1,5 +1,8 @@
 Where per Antenna RSSI comes from PhyRxStatus_2 and PhyRxStatus_3
 
+svn checkout https://github.com/MerlinRdev/86u-merlin/trunk/release/src-rt-5.02hnd/bcmdrivers/broadcom/net/wl/impl51
+
+
 1, First appear in:
 typedef struct wlc_d11rxhdr wlc_d11rxhdr_t;				
 BWL_PRE_PACKED_STRUCT struct wlc_d11rxhdr {				
